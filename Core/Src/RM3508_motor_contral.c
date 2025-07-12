@@ -18,8 +18,7 @@ float speed_kd = 0.0f; // Derivative gain
 float angle_kp = 2000.0f; // Proportional gain for angle control
 float angle_ki = 0.5f; // Integral gain for angle control
 float angle_kd = 0.0f; // Derivative gain for angle control
-static QueueHandle_t motor_rm3508_tx_queue;
-static QueueHandle_t motor_rm3508_rx_queue;
+static QueueHandle_t motor_rm3508_queue;
 
 void receive_date(float date,char flag)
 {
@@ -41,19 +40,15 @@ float temp=10;
 
 /************************************************************************************************/
 //init motor control
-void RM3508_Motor_Start(void)
-{
-    
-}
 
 //start motor control
 //set speed mode
 //set angle mode
 void RM3508_PID_Motor_Init(void)
 {
- // Create a task for PID initialization
+    // Create a task for PID initialization
     // Initialize the PID controller with specified gains and setpoint
-
+    motor_RM3508_Init(&hcan, 0);
     PID_init(&pidcontraller, speed_kp,speed_ki,speed_kd,0.0f, 0.0f, 1000.0f,1.0f,0.0f,0,0); // Set max_output to 100.0f as an example
     PID_init(&angle_pid_contraller, angle_kp, angle_ki, angle_kd,0.0f, 0.0f, 10000.0f,0.3,0.01,1,1.0f); // Set max_output to 100.0f as an example
     pre_motor_speed = 0; // Initialize previous motor speed
@@ -89,7 +84,7 @@ float RM3508_Motor_SetAngle(float angle)
     float fb = 0;
 
     pid_sp_set(&angle_pid_contraller, sp); // Set the desired value (setpoint) for the PID controller
-    fb = motor_rm3508_get_rx_date(0).angle; // Get the feedback value from the motor
+    angle_pid_contraller.fd = motor_rm3508_get_rx_date(0).angle; // Get the feedback value from the motor
     co = (int16_t)PID_compute(&angle_pid_contraller, &fb); // Compute the control output using the PID controller
 		temp=fb;
     RM3508_Motor_SetSpeed(&co); // Set the speed based on the control output

@@ -24,6 +24,9 @@ extern void PID_pre_process(PIDController *pid,struct PID_local_information *loc
 extern float PID_compute_co(PIDController *pid, struct PID_local_information *local_info);
 extern float fedforward_compute(PIDController *pid, struct PID_local_information *local_info);
 extern void PID_after_process(PIDController *pid,struct PID_local_information *local_info,float *result);
+static QueueHandle_t pid_rx_queue;
+static QueueHandle_t pid_tx_queue;
+
 
 //initializes the PID controller with specified gains and setpoint
   void PID_init(PIDController *pid, float Kp, float Ki, float Kd,float fd, float fp, float max_output,float ki_start_err,float deadband,char flag_circle,float maxnumber)
@@ -43,7 +46,10 @@ extern void PID_after_process(PIDController *pid,struct PID_local_information *l
     pid->deadband=deadband;
     pid->flag_circle= flag_circle;
     pid->maxnumber = maxnumber;
+    pid_rx_queue = xQueueCreate(4, sizeof(PIDController));
+    pid_tx_queue = xQueueCreate(4, sizeof(PIDController));
     xSemaphoreGive(pid_semaphore); // Release the semaphore after initialization
+
 }
 
 //update setpoint for the PID controller
@@ -54,7 +60,7 @@ void pid_sp_set(PIDController *pid, float sp)
 
 
 // Computes the PID control output based on the current feedback value
- float PID_compute(PIDController *pid, float *feedback)
+ void PID_compute(void *argument)
 {
     xSemaphoreTake(pid_semaphore, portMAX_DELAY); // Take the semaphore to ensure thread safety
     // define a local information structure to hold intermediate values
@@ -65,7 +71,7 @@ void pid_sp_set(PIDController *pid, float sp)
         .cof = 0.0f, // Initialize feedforward term to 0
         .dt = 0.0f, // Initialize time difference to 0
         .err_integral = 0.0f, // Initialize integral of error to 0
-        .fd=*feedback //Initialize feedback to feedback
+        .fd=PIDController.fd //Initialize feedback to feedback
     };
 		PID_back2=local_info.fd;
     //pre-process the PID controller
