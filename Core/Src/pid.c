@@ -67,7 +67,7 @@ void pid_sp_set(PIDController *pid, float sp)
         .err_integral = 0.0f, // Initialize integral of error to 0
         .fd=*feedback //Initialize feedback to feedback
     };
-		PID_back2=local_info.fd;
+	PID_back2=local_info.fd;
     //pre-process the PID controller
     PID_pre_process(pid, &local_info);
     PID_back=local_info.err;

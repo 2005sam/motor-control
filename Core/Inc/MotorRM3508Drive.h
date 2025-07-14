@@ -21,10 +21,9 @@ struct rx_date_motor_rm3508_struct{
     uint8_t temperture;
     char motor_number;
 };
-struct rx_date_motor_rm3508_struct motor_rm3508_rx_massage(char *motor_number);
+void motor_rm3508_rx_massage(char *motor_number);
 void motor_RM3508_Init(CAN_HandleTypeDef* hcan1,char fifo_number);
 void moter_rm3508_tx_massage(void *argument);
-struct rx_date_motor_rm3508_struct motor_rm3508_get_rx_date(char motor_number);
 
 #endif
 

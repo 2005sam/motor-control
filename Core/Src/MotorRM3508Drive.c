@@ -98,8 +98,8 @@ void motor_RM3508_Init(CAN_HandleTypeDef * hcan1,char fifo_number_input)
 	
 	// Create the queue for temporary RX data
 	temp_data=xQueueCreate(10,sizeof(struct temp_rx_data));
-	motor_rm3508_tx_queue = xQueueCreate(4, sizeof(struct tx_data_motor_rm3508_struct));
-    motor_rm3508_rx_queue = xQueueCreate(4, sizeof(struct rx_date_motor_rm3508_struct));
+	motor_rm3508_tx_queue = xQueueCreate(1, sizeof(struct tx_data_motor_rm3508_struct));
+    motor_rm3508_rx_queue = xQueueCreate(1, sizeof(struct rx_date_motor_rm3508_struct));
 
     xTaskCreate(moter_rm3508_tx_massage, "moter_rm3508_tx_massage", 128, NULL, 1, NULL);
 	xTaskCreate(motor_rm3508_rx_massage, "motor_rm3508_rx_massage", 128, NULL, 1, NULL);
@@ -135,7 +135,7 @@ void motor_rm3508_rx_massage(void *argument)
 	motor_rx_date.current = (temp.rx_data[4]<<8 | temp.rx_data[5]);
 	motor_rx_date.temperture = temp.rx_data[6];
 	motor_rx_date.motor_number = temp.motor;
-	xQueueSend(motor_rm3508_rx_queue, &motor_rx_date, portMAX_DELAY);
+	xQueueOverwrite(motor_rm3508_rx_queue, &motor_rx_date);
 }
 
 
