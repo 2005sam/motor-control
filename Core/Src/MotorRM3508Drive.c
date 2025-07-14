@@ -68,7 +68,7 @@ struct rx_date_motor_rm3508_struct motor_rx_date;
 struct temp_rx_data{char motor;uint8_t rx_data[8];} temp_rx_data;
 static QueueHandle_t motor_rm3508_rx_queue;
 static QueueHandle_t motor_rm3508_tx_queue;
-extern QueueHandle_t temp_data;
+QueueHandle_t temp_data;
 
 
 
@@ -178,7 +178,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 		return;
 	for(int i=0;i<4;i++)
 	{
-		if(HAL_CAN_GetRxMessage(&hcan,Rxfifo,&rx_header_motor[i],temp_rx_data.rx_data)==HAL_OK){
+		if(HAL_CAN_GetRxMessage(hcan,Rxfifo,&rx_header_motor[i],temp_rx_data.rx_data)==HAL_OK){
 			temp_rx_data.motor=i;
 			xQueueSendFromISR(temp_data, &temp_rx_data, NULL);
 			break;
@@ -195,7 +195,7 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	char motor_number=0;
 	for(int i=0;i<4;i++)
 	{
-		if(HAL_CAN_GetRxMessage(&hcan,Rxfifo,&rx_header_motor[i],temp_rx_data.rx_data)==HAL_OK){
+		if(HAL_CAN_GetRxMessage(hcan,Rxfifo,&rx_header_motor[i],temp_rx_data.rx_data)==HAL_OK){
 			temp_rx_data.motor=i;
 			xQueueSendFromISR(temp_data, &temp_rx_data, NULL);
 			break;

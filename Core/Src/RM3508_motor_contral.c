@@ -48,6 +48,7 @@ void RM3508_PID_Motor_Init(void)
 
     PID_init(&pidcontraller, speed_kp,speed_ki,speed_kd,0.0f, 0.0f, 1000.0f,1.0f,0.0f,0,0); // Set max_output to 100.0f as an example
     PID_init(&angle_pid_contraller, angle_kp, angle_ki, angle_kd,0.0f, 0.0f, 10000.0f,0.3,0.01,1,1.0f); // Set max_output to 100.0f as an example
+
     pre_motor_speed = 0; // Initialize previous motor speed
     xTaskCreate(RM3508_Motor_SetSpeed, "RM3508_Motor_SetSpeed", 256, NULL, 1, NULL);
     xTaskCreate(RM3508_Motor_SetAngle, "RM3508_Motor_SetAngle", 256, NULL, 1, NULL);
@@ -63,7 +64,7 @@ void RM3508_Motor_SetSpeed(void *argument)
     float fb = 0;
 
     //update setspeed if speed changed
-        pid_sp_set(&pidcontraller, (float)sp);
+    pid_sp_set(&pidcontraller, (float)sp);
 
 
     //comput co and tx to moter
@@ -72,7 +73,7 @@ void RM3508_Motor_SetSpeed(void *argument)
     fb = (float)motor_rx_data.rpm; // Get the feedback value from the motor
     co = PID_compute(&pidcontraller, &fb); 
     
-    xQueueSend(motor_rm3508_tx_queue, &co, portMAX_DELAY); // Send the control output to the motor
+    xQueueOverwrite(motor_rm3508_tx_queue, &co); // Send the control output to the motor
 }
 
 // used to set control the angle of the motor
@@ -93,5 +94,4 @@ void RM3508_Motor_SetAngle(void *argument)
     fb = motor_rx_data.angle; // Get the feedback value from the motor
     co = (int16_t)PID_compute(&angle_pid_contraller, &fb); // Compute the control output using the PID controller
     xQueueOverwrite(speed_queue, &co); // Overwrite the speed queue with the computed control output
-    return co; // Return the control output (speed) to be set to the motor
 }
