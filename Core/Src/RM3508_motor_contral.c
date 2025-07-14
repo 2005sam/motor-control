@@ -71,6 +71,7 @@ void RM3508_Motor_SetSpeed(void *argument)
     xQueuePeek(motor_rm3508_rx_queue, &motor_rx_data, 0);
     fb = (float)motor_rx_data.rpm; // Get the feedback value from the motor
     co = PID_compute(&pidcontraller, &fb); 
+    
     xQueueSend(motor_rm3508_tx_queue, &co, portMAX_DELAY); // Send the control output to the motor
 }
 

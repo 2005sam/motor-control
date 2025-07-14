@@ -5,7 +5,10 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
-
+struct usr_tx_data{
+    char motor;
+    uint16_t rx_data;
+};
 
 struct tx_data_motor_rm3508_struct{
     int16_t motor1;

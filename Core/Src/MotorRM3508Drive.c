@@ -3,14 +3,16 @@
 #include "MotorRM3508Drive.h"
 //this file is used to receive and send RM3508 motor data through CAN bus
 //receive data is processed and sent to the motor_rm3508_rx_queue
+//receive data is in the form of struct rx_date_motor_rm3508_struct
 //send data is received from the motor_rm3508_tx_queue
+//send data is in the form of struct usr_tx_data
 
 
 #define motor_rx_fifo(num) CAN_RX_FIFO ## num
 #define  motor_rx_number(i,j) i##j 
 #define motor_tx_number(i) do{\
-	tx_data[2*i-2] = motor.motor##i>>8;\
-	tx_data[2*i-1] = motor.motor##i;\
+	tx_data[2*i-2] = motor_send_data.motor##i>>8;\
+	tx_data[2*i-1] = motor_send_data.motor##i;\
 }while(0)
 
 #define motor_active_it(i) CAN_IT_RX_FIFO##i##_MSG_PENDING
@@ -60,6 +62,8 @@ static CAN_FilterTypeDef sFilterConfig;
 static CAN_HandleTypeDef hcan;
 static uint32_t Rxfifo;
 static char fifo_number;
+struct tx_data_motor_rm3508_struct motor_send_data;
+
 struct rx_date_motor_rm3508_struct motor_rx_date;
 struct temp_rx_data{char motor;uint8_t rx_data[8];} temp_rx_data;
 static QueueHandle_t motor_rm3508_rx_queue;
@@ -104,15 +108,40 @@ void motor_RM3508_Init(CAN_HandleTypeDef * hcan1,char fifo_number_input)
     xTaskCreate(moter_rm3508_tx_massage, "moter_rm3508_tx_massage", 128, NULL, 1, NULL);
 	xTaskCreate(motor_rm3508_rx_massage, "motor_rm3508_rx_massage", 128, NULL, 1, NULL);
 
+	motor_send_data.motor1 = 0;
+	motor_send_data.motor2 = 0;
+	motor_send_data.motor3 = 0;
+	motor_send_data.motor4 = 0;
 }
 
 
 
-// Function to prepare the data for transmission
+
+// thread to send data to the motor
 void moter_rm3508_tx_massage(void *argument)
 {
-	struct tx_data_motor_rm3508_struct motor;
-	xQueueReceive(motor_rm3508_tx_queue, &motor, portMAX_DELAY); // Wait for data to be available in the queue
+	// get the data from the motor_rm3508_tx_queue and store it in the motor_send_data
+	struct usr_tx_data motor;
+	xQueueReceive(motor_rm3508_tx_queue, &motor, portMAX_DELAY);
+	switch (motor.motor)
+	{
+	case 1:
+		motor_send_data.motor1 = motor.rx_data;
+		break;
+	case 2:
+		motor_send_data.motor2 = motor.rx_data;
+		break;
+	case 3:
+		motor_send_data.motor3 = motor.rx_data;
+		break;
+	case 4:
+		motor_send_data.motor4 = motor.rx_data;
+		break;
+	default:
+		break;
+	}
+
+	// prepare the tx header and data
 	uint32_t tx_mailbox;
 	uint8_t tx_data[8] = {0};
 	motor_tx_number(1);
@@ -120,6 +149,7 @@ void moter_rm3508_tx_massage(void *argument)
 	motor_tx_number(3);
 	motor_tx_number(4);
 
+	// send the data to the motor
 	HAL_CAN_AddTxMessage(&hcan,&tx_header_motor,tx_data,&tx_mailbox);
 }
 
@@ -129,7 +159,7 @@ void moter_rm3508_tx_massage(void *argument)
 void motor_rm3508_rx_massage(void *argument)
 {
 	struct temp_rx_data temp;
-	xQueueReceive(motor_rm3508_rx_queue, &temp, portMAX_DELAY);
+	xQueueReceive(temp_data, &temp, portMAX_DELAY);
 	motor_rx_date.angle = (temp.rx_data[0]<<8 | temp.rx_data[1])/8191.0f;
 	motor_rx_date.rpm = (temp.rx_data[2]<<8 | temp.rx_data[3]);
 	motor_rx_date.current = (temp.rx_data[4]<<8 | temp.rx_data[5]);
