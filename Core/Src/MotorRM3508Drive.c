@@ -192,7 +192,6 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	if(fifo_number==0)
 		return;
 
-	char motor_number=0;
 	for(int i=0;i<4;i++)
 	{
 		if(HAL_CAN_GetRxMessage(hcan,Rxfifo,&rx_header_motor[i],temp_rx_data.rx_data)==HAL_OK){
