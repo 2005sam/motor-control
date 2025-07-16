@@ -10,8 +10,8 @@ struct PreControlDR16Data
   uint64_t data1;
   uint16_t data2;
 };
-
 void ControlDR16Process(void *argument);
+
 void ControlDR16Init(UART_Typedef *param_huart)
 {
   huart = *param_huart;
