@@ -1,10 +1,12 @@
-#include "MotorRM3508Drive.h"
+#include "motor_rm3508.h"
+#include "queue.h"
 
 struct SetData
 {
 	char motor_number;
 	int16_t motor_current;
-} struct RxData
+};
+struct RxData
 {
 	char motor_number;
 	uint8_t *motor_data;
@@ -13,10 +15,12 @@ struct SetData
 CAN_HandleTypeDef hcan;
 CAN_RxHeaderTypeDef rx_header[4];
 CAN_TxHeaderTypeDef tx_header;
-xQueueHandle set_data_queue;
-xQueueHandle get_data_queue;
+QueueHandle_t set_data_queue;
+QueueHandle_t get_data_queue;
 struct MotorRm3508ReturnData received_data[4];
 uint8_t tx_data[8] = {0};
+char fifo_number;
+static uint32_t Rxfifo;
 
 void RxHeaderSet(void);
 void TxHeaderSet(void);
@@ -53,7 +57,7 @@ char MotorRm3508Init(CAN_HandleTypeDef *hcan1)
 	xTaskCreate(SendDataUpdate, "SendDataUpdate", 128, NULL, 1, NULL);
 	xTaskCreate(SendData, "SendData", 128, NULL, 1, NULL);
 
-	xTaskCreate(ReceiveDataProcess, "ReceiveDataProcess", 128, NULL,
+	xTaskCreate(ReceiveDataProcess, "ReceiveDataProcess", 128, NULL, 1, NULL);
 	return 0;
 }
 
@@ -112,7 +116,7 @@ char MotorRm3508Set(char motor_number, int16_t motor_current)
 //  input kpdata is the pointer to the struct to store the motor data
 // pdata is the pointer to the struct to store the motor data
 //  return 0 if success
-char MotorRm3508Get(char motor_number, const struct MotorRm3508ReturnData *kpdata)
+char MotorRm3508Get(char motor_number, struct MotorRm3508ReturnData *kpdata)
 {
 	*kpdata = received_data[motor_number];
 	return 0;
@@ -130,7 +134,6 @@ void SendDataUpdate(void *argument)
 // function is used to send the tx_data to the motor
 void SendData(void *argument)
 {
-	struct SetData set_data;
 	while (1)
 	{
 		HAL_CAN_AddTxMessage(&hcan, &tx_header, tx_data, NULL);
@@ -165,7 +168,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	uint8_t *recv_data = pvPortMalloc(sizeof(uint8_t) * 8);
 	for (int i = 0; i < 4; i++)
 	{
-		if (HAL_CAN_GetRxMessage(&hcan, Rxfifo, &rx_header[i], recv_data) == HAL_OK)
+		if (HAL_CAN_GetRxMessage(hcan, Rxfifo, &rx_header[i], recv_data) == HAL_OK)
 		{
 			rx_data.motor_number = i;
 			rx_data.motor_data = recv_data;
@@ -186,7 +189,7 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	uint8_t *recv_data = pvPortMalloc(sizeof(uint8_t) * 8);
 	for (int i = 0; i < 4; i++)
 	{
-		if (HAL_CAN_GetRxMessage(&hcan, Rxfifo, &rx_header[i], recv_data) == HAL_OK)
+		if (HAL_CAN_GetRxMessage(hcan, Rxfifo, &rx_header[i], recv_data) == HAL_OK)
 		{
 			rx_data.motor_number = i;
 			rx_data.motor_data = recv_data;

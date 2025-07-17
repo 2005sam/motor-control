@@ -1,8 +1,14 @@
 #include "contral_DR16.h"
+#include "stm32f4xx_hal.h"
+#include "CMSIS_os.h"
+#include "FreeRTOS.h"
+#include "queue.h"
+
+
 // this file is used to get information from DR16 and process it
-uint8_t rxBuffer[18];
+uint8_t rx_Buffer[18];
 UART_HandleTypeDef huart;
-QueueHandle_t control_dr16_queue_isr;
+
 struct ControlDR16Data processed_data;
 struct PreControlDR16Data
 {
@@ -10,13 +16,15 @@ struct PreControlDR16Data
   uint64_t data1;
   uint16_t data2;
 };
+
+xQueueHandle control_dr16_queue_isr;
 void ControlDR16Process(void *argument);
 
-void ControlDR16Init(UART_Typedef *param_huart)
+void ControlDR16Init(UART_HandleTypeDef *param_huart)
 {
   huart = *param_huart;
   // Initialize the UART for receiving data from DR16
-  HAL_UART_Receive_IT(&huart, (uint8_t *)rxBuffer, sizeof(rxBuffer));
+  HAL_UART_Receive_IT(&huart, (uint8_t *)rx_Buffer, sizeof(rx_Buffer));
   // Create a queue to hold the received data
   control_dr16_queue_isr = xQueueCreate(2, sizeof(struct PreControlDR16Data));
   xTaskCreate(ControlDR16Process, "ControlDR16Process", 256, NULL, 1, NULL);
@@ -73,7 +81,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
                               rx_Buffer[14] << 48 |
                               rx_Buffer[15] << 56;
     control_dr16_data.data2 = rx_Buffer[16] | (rx_Buffer[17] << 8);
-    xQueueSendFromISR(control_dr16_queue_isr, control_dr16_data, NULL);
-    HAL_UART_Receive_IT(&huart, (uint8_t *)rxBuffer, sizeof(rxBuffer));
+    xQueueSendFromISR(control_dr16_queue_isr, &control_dr16_data, NULL);
+    HAL_UART_Receive_IT(huart, (uint8_t *)rx_Buffer, sizeof(rx_Buffer));
   }
 }
