@@ -1,5 +1,7 @@
 #include "RM3508_motor_contral.h"
 #include "queue.h"
+#include "contral_DR16.h"
+#include "motor_rm3508.h"
 // #define speed_kp 1
 // #define speed_ki 1
 // #define speed_kd 1
@@ -12,12 +14,12 @@ PIDController angle_pid_contraller;
 int16_t pre_motor_speed = 0; // Previous motor speed, used to avoid oscillation
 // warring:this function is only used to regulating PID,plase delete it in the final version
 /***********************************************************************************************/
-float speed_kp = 100.0f;                             // Proportional gain
-float speed_ki = 1.0f;                               // Integral gain
-float speed_kd = 0.0f;                               // Derivative gain
-float angle_kp = 2000.0f;                            // Proportional gain for angle control
-float angle_ki = 0.5f;                               // Integral gain for angle control
-float angle_kd = 0.0f;                               // Derivative gain for angle control
+float speed_kp = 100.0f;                       // Proportional gain
+float speed_ki = 1.0f;                         // Integral gain
+float speed_kd = 0.0f;                         // Derivative gain
+float angle_kp = 2000.0f;                      // Proportional gain for angle control
+float angle_ki = 0.5f;                         // Integral gain for angle control
+float angle_kd = 0.0f;                         // Derivative gain for angle control
 struct MotorRm3508ReturnData motor_rx_data[4]; // Array to hold data for 4 motors
 static QueueHandle_t motor_rm3508_tx_queue;
 static QueueHandle_t motor_rm3508_rx_queue;
@@ -45,7 +47,7 @@ void receive_date(float date, char flag)
 // init motor control
 void RM3508PIDMotorInit(UART_HandleTypeDef *UARTx, CAN_HandleTypeDef *hcan)
 {
-  ContralDR16Init(UARTx);
+  ControlDR16Init(UARTx);
   MotorRm3508Init(hcan);
   PID_init(&pidcontraller, speed_kp, speed_ki, speed_kd, 0.0f, 0.0f, 1000.0f, 1.0f, 0.0f, 0, 0); // Set max_output to 100.0f as an example
   // PID_init(&angle_pid_contraller, angle_kp, angle_ki, angle_kd, 0.0f, 0.0f, 10000.0f, 0.3, 0.01, 1, 1.0f); // Set max_output to 100.0f as an example

@@ -81,7 +81,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  motor_RM3508_Init(&hcan1, 0);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -146,7 +145,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  RM3508_PID_Motor_Init(&huart3, &hcan1);
+  RM3508PIDMotorInit(&huart3, &hcan1);
   vTaskStartScheduler();
 
   while (1)
