@@ -4,7 +4,6 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 
-
 // this file is used to get information from DR16 and process it
 uint8_t rx_Buffer[18];
 UART_HandleTypeDef huart;
@@ -27,7 +26,7 @@ void ControlDR16Init(UART_HandleTypeDef *param_huart)
   HAL_UART_Receive_IT(&huart, (uint8_t *)rx_Buffer, sizeof(rx_Buffer));
   // Create a queue to hold the received data
   control_dr16_queue_isr = xQueueCreate(2, sizeof(struct PreControlDR16Data));
-  xTaskCreate(ControlDR16Process, "ControlDR16Process", 256, NULL, 1, NULL);
+  xTaskCreate(ControlDR16Process, "ControlDR16Process", 512, NULL, 1, NULL);
 }
 
 void ControlDR16Process(void *argument)

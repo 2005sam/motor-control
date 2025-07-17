@@ -74,7 +74,7 @@ void RM3508MotorSetSpeed(void *argument)
     fb = motor_data.rpm;
     float co = PID_compute(&pidcontraller, &fb);
     MotorRm3508Set(0, co);
-    vTaskDelay(pdMS_TO_TICKS(100)); // Delay for a period to control the loop frequency
+    vTaskDelay(2); // Delay for a period to control the loop frequency
   }
 }
 

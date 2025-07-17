@@ -137,7 +137,7 @@ void SendData(void *argument)
 	while (1)
 	{
 		HAL_CAN_AddTxMessage(&hcan, &tx_header, tx_data, NULL);
-		vTaskDelay(pdMS_TO_TICKS(100));
+		vTaskDelay(2);
 	}
 }
 

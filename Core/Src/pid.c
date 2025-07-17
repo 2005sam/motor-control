@@ -28,7 +28,7 @@ extern void PID_after_process(PIDController *pid,struct PID_local_information *l
 //initializes the PID controller with specified gains and setpoint
   void PID_init(PIDController *pid, float Kp, float Ki, float Kd,float fd, float fp, float max_output,float ki_start_err,float deadband,char flag_circle,float maxnumber)
 {
-    xSemaphoreTake(pid_semaphore, portMAX_DELAY); // Take the semaphore to ensure thread safety
+    
     pid->Kp = Kp;
     pid->Ki = Ki;
     pid->Kd = Kd;
@@ -43,7 +43,7 @@ extern void PID_after_process(PIDController *pid,struct PID_local_information *l
     pid->deadband=deadband;
     pid->flag_circle= flag_circle;
     pid->maxnumber = maxnumber;
-    xSemaphoreGive(pid_semaphore); // Release the semaphore after initialization
+    
 }
 
 //update setpoint for the PID controller
@@ -56,7 +56,7 @@ void pid_sp_set(PIDController *pid, float sp)
 // Computes the PID control output based on the current feedback value
  float PID_compute(PIDController *pid, float *feedback)
 {
-    xSemaphoreTake(pid_semaphore, portMAX_DELAY); // Take the semaphore to ensure thread safety
+    //xSemaphoreTake(pid_semaphore, portMAX_DELAY); // Take the semaphore to ensure thread safety
     // define a local information structure to hold intermediate values
     struct PID_local_information local_info={
         .ki_flag = 1, // Initialize ki_flag to 0
@@ -82,7 +82,7 @@ void pid_sp_set(PIDController *pid, float sp)
     float result = co+cof;
     //update the previous values and check the limits
     PID_after_process(pid, &local_info, &result);
-    xSemaphoreGive(pid_semaphore); // Release the semaphore after processing
+    //xSemaphoreGive(pid_semaphore); // Release the semaphore after processing
     return result;
 }
 
