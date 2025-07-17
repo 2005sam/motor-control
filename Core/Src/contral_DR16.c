@@ -82,5 +82,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     control_dr16_data.data2 = rx_Buffer[16] | (rx_Buffer[17] << 8);
     xQueueSendFromISR(control_dr16_queue_isr, &control_dr16_data, NULL);
     HAL_UART_Receive_IT(huart, (uint8_t *)rx_Buffer, sizeof(rx_Buffer));
+		portYIELD_FROM_ISR(pdTRUE);
   }
 }

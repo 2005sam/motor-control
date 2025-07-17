@@ -175,10 +175,11 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 			if (xQueueSendToBackFromISR(get_data_queue, &rx_data, NULL) != pdPASS)
 				vPortFree(recv_data);
 
-			return;
+			portYIELD_FROM_ISR(pdTRUE);
 		}
 	}
 	vPortFree(recv_data);
+	portYIELD_FROM_ISR(pdTRUE);
 }
 
 void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
@@ -196,8 +197,9 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 			if (xQueueSendToBackFromISR(get_data_queue, &rx_data, NULL) != pdPASS)
 				vPortFree(recv_data);
 
-			return;
+			portYIELD_FROM_ISR(pdTRUE);
 		}
 	}
 	vPortFree(recv_data);
+	portYIELD_FROM_ISR(pdTRUE);
 }
