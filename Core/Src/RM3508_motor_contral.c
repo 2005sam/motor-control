@@ -62,7 +62,7 @@ void RM3508MotorSetSpeed(void *argument)
   while (1)
   {
     ControlDR16GetValue(&control_data);
-    float sp = (float)control_data.ch3 - 1024.0f;
+    float sp = (float)control_data.ch0 - 1024.0f;
     float fb = 0;
 
     // update setspeed if speed changed
