@@ -36,6 +36,11 @@ char MotorRm3508Init(CAN_HandleTypeDef *hcan1)
 {
 	hcan = *hcan1;
 	fifo_number = 0;
+
+	RxHeaderSet();
+	TxHeaderSet();
+	sFilterConfigSet();
+	HAL_CAN_Start(&hcan);
 	if (fifo_number == 0)
 	{
 		Rxfifo = CAN_RX_FIFO0;
@@ -46,15 +51,9 @@ char MotorRm3508Init(CAN_HandleTypeDef *hcan1)
 		Rxfifo = CAN_RX_FIFO1;
 		HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO1_MSG_PENDING);
 	}
-
-	RxHeaderSet();
-	TxHeaderSet();
-	sFilterConfigSet();
-	HAL_CAN_Start(&hcan);
-
 	get_data_queue = xQueueCreate(4, sizeof(struct RxData));
 	set_data_queue = xQueueCreate(4, sizeof(struct SetData));
-	xTaskCreate(SendDataUpdate, "SendDataUpdate", 128, NULL, 1, NULL);
+	//xTaskCreate(SendDataUpdate, "SendDataUpdate", 128, NULL, 1, NULL);
 	xTaskCreate(SendData, "SendData", 128, NULL, 1, NULL);
 
 	xTaskCreate(ReceiveDataProcess, "ReceiveDataProcess", 128, NULL, 1, NULL);
@@ -125,10 +124,13 @@ char MotorRm3508Get(char motor_number, struct MotorRm3508ReturnData *kpdata)
 // function is used to updata the tx_data when a set data is received
 void SendDataUpdate(void *argument)
 {
-	struct SetData set_data;
-	xQueueReceive(set_data_queue, &set_data, portMAX_DELAY);
-	tx_data[set_data.motor_number * 2] = set_data.motor_current >> 8;
-	tx_data[set_data.motor_number * 2 + 1] = set_data.motor_current & 0xFF;
+	while (1)
+	{
+		struct SetData set_data;
+		xQueueReceive(set_data_queue, &set_data, portMAX_DELAY);
+		tx_data[set_data.motor_number * 2] = set_data.motor_current >> 8;
+		tx_data[set_data.motor_number * 2 + 1] = set_data.motor_current & 0xFF;
+	}
 }
 
 // function is used to send the tx_data to the motor
@@ -136,7 +138,8 @@ void SendData(void *argument)
 {
 	while (1)
 	{
-		HAL_CAN_AddTxMessage(&hcan, &tx_header, tx_data, NULL);
+		uint32_t mailbox;
+		HAL_CAN_AddTxMessage(&hcan, &tx_header, tx_data, &mailbox);
 		vTaskDelay(2);
 	}
 }
@@ -162,8 +165,6 @@ void ReceiveDataProcess(void *argument)
 // a memory is allocated to store the received data, and it should be freed after use
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-	if (fifo_number == 1)
-		return;
 	struct RxData rx_data;
 	uint8_t *recv_data = pvPortMalloc(sizeof(uint8_t) * 8);
 	for (int i = 0; i < 4; i++)
@@ -174,7 +175,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 			rx_data.motor_data = recv_data;
 			if (xQueueSendToBackFromISR(get_data_queue, &rx_data, NULL) != pdPASS)
 				vPortFree(recv_data);
-
 			portYIELD_FROM_ISR(pdTRUE);
 		}
 	}
@@ -184,8 +184,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 
 void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-	if (fifo_number == 0)
-		return;
 	struct RxData rx_data;
 	uint8_t *recv_data = pvPortMalloc(sizeof(uint8_t) * 8);
 	for (int i = 0; i < 4; i++)
