@@ -1,5 +1,7 @@
 #include "motor_rm3508.h"
 #include "queue.h"
+#include "semphr.h"
+
 
 struct SetData
 {
@@ -21,6 +23,7 @@ struct MotorRm3508ReturnData received_data[4];
 uint8_t tx_data[8] = {0};
 char fifo_number;
 static uint32_t Rxfifo;
+SemaphoreHandle_t can_receive_mutex;
 
 void RxHeaderSet(void);
 void TxHeaderSet(void);
@@ -53,7 +56,8 @@ char MotorRm3508Init(CAN_HandleTypeDef *hcan1)
 	}
 	get_data_queue = xQueueCreate(4, sizeof(struct RxData));
 	set_data_queue = xQueueCreate(4, sizeof(struct SetData));
-	// xTaskCreate(SendDataUpdate, "SendDataUpdate", 128, NULL, 1, NULL);
+	can_receive_mutex = xSemaphoreCreateMutex();
+	xTaskCreate(SendDataUpdate, "SendDataUpdate", 128, NULL, 1, NULL);
 	xTaskCreate(SendData, "SendData", 128, NULL, 1, NULL);
 
 	xTaskCreate(ReceiveDataProcess, "ReceiveDataProcess", 128, NULL, 1, NULL);
@@ -151,53 +155,32 @@ void ReceiveDataProcess(void *argument)
 	struct RxData rx_data;
 	while (1)
 	{
-		xQueueReceive(get_data_queue, &rx_data, portMAX_DELAY);
-		received_data[rx_data.motor_number].angle = (rx_data.motor_data[0] << 8 | rx_data.motor_data[1]) / 8191.0f;
-		received_data[rx_data.motor_number].rpm = (rx_data.motor_data[2] << 8 | rx_data.motor_data[3]);
-		received_data[rx_data.motor_number].current = (rx_data.motor_data[4] << 8 | rx_data.motor_data[5]);
-		received_data[rx_data.motor_number].temperture = rx_data.motor_data[6];
-		vPortFree(rx_data.motor_data);
+		xSemaphoreTake(can_receive_mutex, portMAX_DELAY);
+		uint8_t reve_data[8];
+		for (int i = 0; i < 4; i++)
+		{
+			if (HAL_CAN_GetRxMessage(&hcan, Rxfifo, &rx_header[i], reve_data) == HAL_OK)
+			{
+				received_data[i].angle = (reve_data[0] << 8 | reve_data[1]) / 8191.0f;
+				received_data[i].rpm = (reve_data[2] << 8 | reve_data[3]);
+				received_data[i].current = (reve_data[4] << 8 | reve_data[5]);
+				received_data[i].temperture = reve_data[6];
+			}
+		}
 	}
 }
-
 // two functions are used to receive the data from the motor
 // warning: this function is called in the interrupt, so it should not use any blocking functions
 // a memory is allocated to store the received data, and it should be freed after use
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-	struct RxData rx_data;
-	uint8_t *recv_data = pvPortMalloc(sizeof(uint8_t) * 8);
-	for (int i = 0; i < 4; i++)
-	{
-		if (HAL_CAN_GetRxMessage(hcan, Rxfifo, &rx_header[i], recv_data) == HAL_OK)
-		{
-			rx_data.motor_number = i;
-			rx_data.motor_data = recv_data;
-			if (xQueueSendToBackFromISR(get_data_queue, &rx_data, NULL) != pdPASS)
-				vPortFree(recv_data);
-			portYIELD_FROM_ISR(pdTRUE);
-		}
-	}
-	vPortFree(recv_data);
+
+	xSemaphoreGive(can_receive_mutex);
 	portYIELD_FROM_ISR(pdTRUE);
 }
 
 void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-	struct RxData rx_data;
-	uint8_t *recv_data = pvPortMalloc(sizeof(uint8_t) * 8);
-	for (int i = 0; i < 4; i++)
-	{
-		if (HAL_CAN_GetRxMessage(hcan, Rxfifo, &rx_header[i], recv_data) == HAL_OK)
-		{
-			rx_data.motor_number = i;
-			rx_data.motor_data = recv_data;
-			if (xQueueSendToBackFromISR(get_data_queue, &rx_data, NULL) != pdPASS)
-				vPortFree(recv_data);
-
-			portYIELD_FROM_ISR(pdTRUE);
-		}
-	}
-	vPortFree(recv_data);
+	xSemaphoreGive(can_receive_mutex);
 	portYIELD_FROM_ISR(pdTRUE);
 }

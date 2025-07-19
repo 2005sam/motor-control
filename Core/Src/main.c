@@ -19,6 +19,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
+#include "semphr.h"
+
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -70,7 +72,27 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+uint8_t rx_Buffer[18];
+SemaphoreHandle_t temp;
+int16_t result;
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
 
+  result = (((int16_t)rx_Buffer[0] | (int16_t)rx_Buffer[1] << 8) & 0x07FF - 1024) ;
+	xSemaphoreGiveFromISR(temp,NULL);
+  //MotorRm3508Set(0, result);
+  //HAL_UART_Receive_IT(&huart3, rx_Buffer, 18);
+}
+
+void DR16Process(void *argument)
+{
+	while(1){
+		    xSemaphoreTake(temp, portMAX_DELAY);
+
+	 MotorRm3508Set(0, result);
+		HAL_UART_Receive_IT(&huart3, rx_Buffer, 18);
+	}
+}
 /* USER CODE END 0 */
 
 /**
@@ -104,9 +126,10 @@ int main(void)
   MX_CAN1_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
- 
-  //vTaskStartScheduler();
 
+  // Start receiving data via UART
+
+  // vTaskStartScheduler();
 
   /* USER CODE END 2 */
 
@@ -140,7 +163,10 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
-	RM3508PIDMotorInit(&huart3,&hcan1);
+	 HAL_UART_Receive_IT(&huart3, rx_Buffer, 18);
+  xTaskCreate(DR16Process, "ControlDR16Process", 512, NULL, 1, NULL);
+	temp = xSemaphoreCreateBinary();
+  RM3508PIDMotorInit(&huart3, &hcan1);
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */

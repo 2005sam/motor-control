@@ -6,16 +6,16 @@
 #include "semphr.h"
 
 // this file is used to get information from DR16 and process it
-uint8_t rx_Buffer[18];
+//uint8_t rx_Buffer[18];
 UART_HandleTypeDef huart;
 SemaphoreHandle_t xBinarySemaphorel;
 
 struct ControlDR16Data processed_data;
 
-
 xQueueHandle control_dr16_queue_isr;
 void ControlDR16Process(void *argument);
 
+/*
 void ControlDR16Init(UART_HandleTypeDef *param_huart)
 {
   huart = *param_huart;
@@ -24,7 +24,8 @@ void ControlDR16Init(UART_HandleTypeDef *param_huart)
   xBinarySemaphorel = xSemaphoreCreateBinary();
   // xTaskCreate(ControlDR16Process, "ControlDR16Process", 512, NULL, 1, NULL);
 }
-
+*/
+/*
 void ControlDR16Process(void *argument)
 {
   while (1)
@@ -48,19 +49,24 @@ void ControlDR16Process(void *argument)
     // processed_data.reserved = control_dr16_data.data2 & 0xFFFF;
   }
 }
+*/
 
 void ControlDR16GetValue(struct ControlDR16Data *data)
 {
   *data = processed_data;
 }
 
+/*
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
+  while (1)
+    ;
   if (huart->Instance == USART3)
   {
     processed_data.ch0 = ((int16_t)rx_Buffer[0] | ((int16_t)rx_Buffer[1] << 8)) & 0x07FF;
     xSemaphoreGive(xBinarySemaphorel);
-    HAL_UART_Receive_IT(huart, rx_Buffer, sizeof(rx_Buffer));
+    HAL_UART_Receive_IT(huart, rx_Buffer, 18);
     portYIELD_FROM_ISR(pdTRUE);
   }
 }
+*/
