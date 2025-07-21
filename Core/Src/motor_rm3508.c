@@ -2,7 +2,6 @@
 #include "queue.h"
 #include "semphr.h"
 
-
 struct SetData
 {
 	char motor_number;
@@ -47,12 +46,12 @@ char MotorRm3508Init(CAN_HandleTypeDef *hcan1)
 	if (fifo_number == 0)
 	{
 		Rxfifo = CAN_RX_FIFO0;
-		// HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
+		HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
 	}
 	else
 	{
 		Rxfifo = CAN_RX_FIFO1;
-		// HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO1_MSG_PENDING);
+		HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO1_MSG_PENDING);
 	}
 	get_data_queue = xQueueCreate(4, sizeof(struct RxData));
 	set_data_queue = xQueueCreate(4, sizeof(struct SetData));
