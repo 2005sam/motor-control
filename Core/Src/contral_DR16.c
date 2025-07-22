@@ -6,28 +6,33 @@
 #include "semphr.h"
 
 // this file is used to get information from DR16 and process it
-// uint8_t rx_Buffer[18];
+//uint8_t rx_Buffer[18];
 UART_HandleTypeDef huart;
-SemaphoreHandle_t uart_get;
+SemaphoreHandle_t xBinarySemaphorel;
 
 struct ControlDR16Data processed_data;
 
 xQueueHandle control_dr16_queue_isr;
 void ControlDR16Process(void *argument);
 
+/*
 void ControlDR16Init(UART_HandleTypeDef *param_huart)
 {
   huart = *param_huart;
+  // Initialize the UART for receiving data from DR16
   HAL_UART_Receive_IT(&huart, rx_Buffer, 18);
-  uart_get = xSemaphoreCreateBinary();
-  xTaskCreate(ControlDR16Process, "ControlDR16Process", 512, NULL, 1, NULL);
+  xBinarySemaphorel = xSemaphoreCreateBinary();
+  // xTaskCreate(ControlDR16Process, "ControlDR16Process", 512, NULL, 1, NULL);
 }
-
+*/
+/*
 void ControlDR16Process(void *argument)
 {
   while (1)
   {
-    xSemaphoreTake(uart_get, portMAX_DELAY);
+    xSemaphoreTake(xBinarySemaphorel, portMAX_DELAY);
+
+    // Process the received data
 
     processed_data.ch0 = ((int16_t)rx_Buffer[0] | ((int16_t)rx_Buffer[1] << 8)) & 0x07FF;
     processed_data.ch1 = (((int16_t)rx_Buffer[1] >> 3) | ((int16_t)rx_Buffer[2] << 5)) & 0x07FF;
@@ -42,24 +47,26 @@ void ControlDR16Process(void *argument)
     processed_data.mouse_button_R = rx_Buffer[13];
     processed_data.buttons = ((int16_t)rx_Buffer[14]) | ((int16_t)rx_Buffer[15] << 8);
     // processed_data.reserved = control_dr16_data.data2 & 0xFFFF;
-    HAL_UART_Receive_IT(huart, rx_Buffer, 18);
   }
 }
+*/
 
-// the function is used to return the DR16 data
-// the data is formed of struct ControlDR16Data
 void ControlDR16GetValue(struct ControlDR16Data *data)
 {
   *data = processed_data;
 }
-// Todo:test uart receive interrupt
 
+/*
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
+  while (1)
+    ;
   if (huart->Instance == USART3)
   {
     processed_data.ch0 = ((int16_t)rx_Buffer[0] | ((int16_t)rx_Buffer[1] << 8)) & 0x07FF;
-    xSemaphoreGiveFromISR(uart_get, Null);
+    xSemaphoreGive(xBinarySemaphorel);
+    HAL_UART_Receive_IT(huart, rx_Buffer, 18);
     portYIELD_FROM_ISR(pdTRUE);
   }
 }
+*/
