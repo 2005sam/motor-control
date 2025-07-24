@@ -4,33 +4,67 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "semphr.h"
+// #include "motor_rm3508"
 
 // this file is used to get information from DR16 and process it
-//uint8_t rx_Buffer[18];
+// uint8_t rx_Buffer[18];
 UART_HandleTypeDef huart;
-SemaphoreHandle_t xBinarySemaphorel;
+// SemaphoreHandle_t xBinarySemaphorel;
+
+uint8_t rx_Buffer[18];
+SemaphoreHandle_t temp;
+int16_t result;
 
 struct ControlDR16Data processed_data;
 
 xQueueHandle control_dr16_queue_isr;
 void ControlDR16Process(void *argument);
 
-/*
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	
+
+  result = (((int16_t)rx_Buffer[0] | (int16_t)rx_Buffer[1] << 8) & 0x07FF - 1024);
+  xSemaphoreGiveFromISR(temp, NULL);
+  // MotorRm3508Set(0, result);
+  // HAL_UART_Receive_IT(&huart3, rx_Buffer, 18);
+}
+void DR16Process(void *argument)
+{
+  while (1)
+  {
+    xSemaphoreTake(temp, portMAX_DELAY);
+
+    MotorRm3508Set(0, result);
+    HAL_UART_Receive_IT(&huart, rx_Buffer, 18);
+  }
+}
+void ContralDR16InitTask(void *argument);
+
 void ControlDR16Init(UART_HandleTypeDef *param_huart)
 {
   huart = *param_huart;
-  // Initialize the UART for receiving data from DR16
-  HAL_UART_Receive_IT(&huart, rx_Buffer, 18);
-  xBinarySemaphorel = xSemaphoreCreateBinary();
-  // xTaskCreate(ControlDR16Process, "ControlDR16Process", 512, NULL, 1, NULL);
+  xTaskCreate(ContralDR16InitTask, "ContralDR16InitTask", 512, NULL, 0, NULL);
+  // HAL_UART_Receive_IT(&huart, rx_Buffer, 18);
+  //  Initialize the UART for receiving data from DR16
+  //  HAL_UART_Receive_IT(&huart, rx_Buffer, 18);
+  //  xBinarySemaphorel = xSemaphoreCreateBinary();
+  //  xTaskCreate(ControlDR16Process, "ControlDR16Process", 512, NULL, 1, NULL);
 }
-*/
+
+void ContralDR16InitTask(void *argument)
+{
+  temp = xSemaphoreCreateBinary();
+	HAL_UART_Receive_IT(&huart, rx_Buffer, 18);
+  vTaskDelete(NULL);
+}
+
 /*
 void ControlDR16Process(void *argument)
 {
   while (1)
   {
-    xSemaphoreTake(xBinarySemaphorel, portMAX_DELAY);
+    xSemaphoreGiveFromISR(xBinarySemaphorel, NULL);
 
     // Process the received data
 
@@ -47,26 +81,27 @@ void ControlDR16Process(void *argument)
     processed_data.mouse_button_R = rx_Buffer[13];
     processed_data.buttons = ((int16_t)rx_Buffer[14]) | ((int16_t)rx_Buffer[15] << 8);
     // processed_data.reserved = control_dr16_data.data2 & 0xFFFF;
+      HAL_UART_Receive_IT(&huart, rx_Buffer, 18);
+
   }
 }
-*/
+
 
 void ControlDR16GetValue(struct ControlDR16Data *data)
 {
   *data = processed_data;
 }
 
-/*
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-  while (1)
-    ;
   if (huart->Instance == USART3)
   {
     processed_data.ch0 = ((int16_t)rx_Buffer[0] | ((int16_t)rx_Buffer[1] << 8)) & 0x07FF;
     xSemaphoreGive(xBinarySemaphorel);
-    HAL_UART_Receive_IT(huart, rx_Buffer, 18);
+    //HAL_UART_Receive_IT(huart, rx_Buffer, 18);
     portYIELD_FROM_ISR(pdTRUE);
   }
 }
+
 */

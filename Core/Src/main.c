@@ -72,6 +72,7 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+/*
 uint8_t rx_Buffer[18];
 SemaphoreHandle_t temp;
 int16_t result;
@@ -93,6 +94,7 @@ void DR16Process(void *argument)
 		HAL_UART_Receive_IT(&huart3, rx_Buffer, 18);
 	}
 }
+*/
 /* USER CODE END 0 */
 
 /**
@@ -163,10 +165,11 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
-	 HAL_UART_Receive_IT(&huart3, rx_Buffer, 18);
-  xTaskCreate(DR16Process, "ControlDR16Process", 512, NULL, 1, NULL);
-	temp = xSemaphoreCreateBinary();
+	 
+  //xTaskCreate(DR16Process, "ControlDR16Process", 512, NULL, 1, NULL);
+	//temp = xSemaphoreCreateBinary();
   RM3508PIDMotorInit(&huart3, &hcan1);
+	//HAL_UART_Receive_IT(&huart3, rx_Buffer, 18);
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
