@@ -50,7 +50,7 @@ void RM3508PIDMotorInit(UART_HandleTypeDef *UARTx, CAN_HandleTypeDef *hcan)
 {
   ControlDR16Init(UARTx);
   MotorRm3508Init(hcan);
-  //PID_init(&pidcontraller, speed_kp, speed_ki, speed_kd, 0.0f, 0.0f, 1000.0f, 1.0f, 0.0f, 0, 0); // Set max_output to 100.0f as an example
+  PID_init(&pidcontraller, speed_kp, speed_ki, speed_kd, 0.0f, 0.0f, 1000.0f, 1.0f, 0.0f, 0, 0); // Set max_output to 100.0f as an example
   // PID_init(&angle_pid_contraller, angle_kp, angle_ki, angle_kd, 0.0f, 0.0f, 10000.0f, 0.3, 0.01, 1, 1.0f); // Set max_output to 100.0f as an example
 
   pre_motor_speed = 0;
@@ -62,19 +62,19 @@ void RM3508MotorSetSpeed(void *argument)
   struct ControlDR16Data control_data;
   while (1)
   {
-    //ControlDR16GetValue(&control_data);
-    sp = (float)control_data.ch0 - 1024.0f;
+    ControlDR16GetValue(&control_data);
+    sp = ((float)control_data.ch0 - 1024.0f);
     float fb = 0;
 
     // update setspeed if speed changed
-    //pid_sp_set(&pidcontraller, (float)sp);
+    pid_sp_set(&pidcontraller, (float)sp);
 
     // comput co and tx to mot
     struct MotorRm3508ReturnData motor_data;
     MotorRm3508Get(0, &motor_data);
     fb = motor_data.rpm;
-    //float co = PID_compute(&pidcontraller, &fb);
-    //MotorRm3508Set(0, sp);
+    float co = PID_compute(&pidcontraller, &fb);
+    MotorRm3508Set(0, (int16_t)co);
     vTaskDelay(2); // Delay for a period to control the loop frequency
   }
 }
