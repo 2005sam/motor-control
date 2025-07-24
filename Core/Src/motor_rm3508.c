@@ -1,7 +1,18 @@
+// Copyright (C) 2025 b2(shengpengxiang1@outlook.com)
+// This This program is free software:
+// you can redistribute it and/or modify it under the terms of the
+// GNU General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License along with this program.
+// If not, see <http://www.gnu.org/licenses/>.
+
 #include "motor_rm3508.h"
 #include "queue.h"
 #include "semphr.h"
-
 
 struct SetData
 {
@@ -47,12 +58,12 @@ char MotorRm3508Init(CAN_HandleTypeDef *hcan1)
 	if (fifo_number == 0)
 	{
 		Rxfifo = CAN_RX_FIFO0;
-		 HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
+		HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
 	}
 	else
 	{
 		Rxfifo = CAN_RX_FIFO1;
-		// HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO1_MSG_PENDING);
+		HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO1_MSG_PENDING);
 	}
 	get_data_queue = xQueueCreate(4, sizeof(struct RxData));
 	set_data_queue = xQueueCreate(4, sizeof(struct SetData));
@@ -60,7 +71,7 @@ char MotorRm3508Init(CAN_HandleTypeDef *hcan1)
 	xTaskCreate(SendDataUpdate, "SendDataUpdate", 128, NULL, 1, NULL);
 	xTaskCreate(SendData, "SendData", 128, NULL, 1, NULL);
 
-	//xTaskCreate(ReceiveDataProcess, "ReceiveDataProcess", 128, NULL, 1, NULL);
+	// xTaskCreate(ReceiveDataProcess, "ReceiveDataProcess", 128, NULL, 1, NULL);
 	return 0;
 }
 
@@ -148,14 +159,15 @@ void SendData(void *argument)
 	}
 }
 
-// function is used to receive the data from the motor and store it in the received_data structure
-// it also frees the memory rx_data.motor_data
+// DEPRECATED
+//  function is used to receive the data from the motor and store it in the received_data structure
+//  it also frees the memory rx_data.motor_data
 void ReceiveDataProcess(void *argument)
 {
 	struct RxData rx_data;
 	while (1)
 	{
-		//xSemaphoreTake(can_receive_mutex, portMAX_DELAY);
+		// xSemaphoreTake(can_receive_mutex, portMAX_DELAY);
 		uint8_t reve_data[8];
 		for (int i = 0; i < 4; i++)
 		{
@@ -175,18 +187,18 @@ void ReceiveDataProcess(void *argument)
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
 
-	//xSemaphoreGiveFromISR(can_receive_mutex,NULL);
-			uint8_t reve_data[8];
-		for (int i = 0; i < 4; i++)
+	// xSemaphoreGiveFromISR(can_receive_mutex,NULL);
+	uint8_t reve_data[8];
+	for (int i = 0; i < 4; i++)
+	{
+		if (HAL_CAN_GetRxMessage(hcan, Rxfifo, &rx_header[i], reve_data) == HAL_OK)
 		{
-			if (HAL_CAN_GetRxMessage(hcan, Rxfifo, &rx_header[i], reve_data) == HAL_OK)
-			{
-				received_data[i].angle = (reve_data[0] << 8 | reve_data[1]) / 8191.0f;
-				received_data[i].rpm = (reve_data[2] << 8 | reve_data[3]);
-				received_data[i].current = (reve_data[4] << 8 | reve_data[5]);
-				received_data[i].temperture = reve_data[6];
-			}
+			received_data[i].angle = (reve_data[0] << 8 | reve_data[1]) / 8191.0f;
+			received_data[i].rpm = (reve_data[2] << 8 | reve_data[3]);
+			received_data[i].current = (reve_data[4] << 8 | reve_data[5]);
+			received_data[i].temperture = reve_data[6];
 		}
+	}
 	portYIELD_FROM_ISR(pdTRUE);
 }
 
