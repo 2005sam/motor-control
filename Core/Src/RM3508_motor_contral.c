@@ -10,7 +10,7 @@
 // #define angle_kd 0.0f // Derivative gain for angle control
 
 int16_t motor_target_speed[4] = {0, 0, 0, 0};
-struct SetData chassis_target_speed;
+struct StructChassisSpeedSet chassis_target_speed;
 PIDController pidcontraller;
 PIDController PID_speed_contraller[4];
 PIDController angle_pid_contraller;
@@ -63,7 +63,7 @@ void RM3508PIDMotorInit(UART_HandleTypeDef *UARTx, CAN_HandleTypeDef *hcan)
     PID_init(&PID_speed_contraller[i], speed_kp, speed_ki, speed_kd, 0.0f, 0.0f, 1000.0f, 1.0f, 0.0f, 0, 0); // Set max_output to 100.0f as an example
   }
   pre_motor_speed = 0;
-  chassis_set_queue = xQueueCreate(4, sizeof(struct SetData));
+  chassis_set_queue = xQueueCreate(4, sizeof(struct StructChassisSpeedSet));
   xTaskCreate(RM3508MotorSetSpeed, "RM3508_Motor_SetSpeed", 1024, NULL, 1, NULL);
   xTaskCreate(ChassisTargetSpeedUpdate, "Chassis_TargetSpeed_Update", 1024, NULL, 1, NULL);
   xTaskCreate(ComputeSpeed, "Conpute_Speed", 1024, NULL, 1, NULL);
@@ -71,7 +71,7 @@ void RM3508PIDMotorInit(UART_HandleTypeDef *UARTx, CAN_HandleTypeDef *hcan)
 
 void ChassisSpeedSet(float vx, float vy, float angle)
 {
-  struct SetData set_data;
+  struct StructChassisSpeedSet set_data;
   set_data.vx = vx;
   set_data.vy = vy;
   set_data.angle = angle;
@@ -80,7 +80,7 @@ void ChassisSpeedSet(float vx, float vy, float angle)
 
 void ChassisTargetSpeedUpdate(void *argument)
 {
-  struct SetData set_data;
+  struct StructChassisSpeedSet set_data;
   while (1)
   {
     xQueueReceive(chassis_set_queue, &set_data, portMAX_DELAY);
@@ -97,7 +97,7 @@ void RM3508MotorSetSpeed(void *argument)
     {
       struct MotorRm3508ReturnData motor_data;
       MotorRm3508Get(i, &motor_data);
-      fb = motor_data.rpm;
+      float fb = motor_data.rpm;
       float co = PID_compute(&pidcontraller, &fb);
       MotorRm3508Set(i, (int16_t)co);
     }
@@ -116,7 +116,7 @@ void ComputeSpeed(void *argument)
 
     for (int i = 0; i < 4; i++)
     {
-      PID_sp_set(&PID_speed_contraller[i], motor_target_speed[i]);
+      pid_sp_set(&PID_speed_contraller[i], motor_target_speed[i]);
     }
     vTaskDelay(pdMS_TO_TICKS(100));
   }
