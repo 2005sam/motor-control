@@ -9,8 +9,12 @@
 // #define angle_ki 0.0005f // Integral gain for angle control
 // #define angle_kd 0.0f // Derivative gain for angle control
 
+int16_t motor_target_speed[4] = {0, 0, 0, 0};
+struct SetData chassis_target_speed;
 PIDController pidcontraller;
+PIDController PID_speed_contraller[4];
 PIDController angle_pid_contraller;
+QueueHandle_t chassis_set_queue;
 int16_t pre_motor_speed = 0; // Previous motor speed, used to avoid oscillation
 // warring:this function is only used to regulating PID,plase delete it in the final version
 /***********************************************************************************************/
@@ -25,7 +29,9 @@ static QueueHandle_t motor_rm3508_tx_queue;
 static QueueHandle_t motor_rm3508_rx_queue;
 static QueueHandle_t speed_queue;
 static QueueHandle_t angle_queue;
-void RM3508_Motor_get(void *argument);
+void ChassisSpeedSet(float vx, float vy, float angle);
+void ChassisTargetSpeedUpdate(void *argument);
+void ComputeSpeed(void *argument);
 float sp;
 
 void receive_date(float date, char flag)
@@ -52,9 +58,34 @@ void RM3508PIDMotorInit(UART_HandleTypeDef *UARTx, CAN_HandleTypeDef *hcan)
   MotorRm3508Init(hcan);
   PID_init(&pidcontraller, speed_kp, speed_ki, speed_kd, 0.0f, 0.0f, 1000.0f, 1.0f, 0.0f, 0, 0); // Set max_output to 100.0f as an example
   // PID_init(&angle_pid_contraller, angle_kp, angle_ki, angle_kd, 0.0f, 0.0f, 10000.0f, 0.3, 0.01, 1, 1.0f); // Set max_output to 100.0f as an example
-
+  for (int i = 0; i < 4; i++)
+  {
+    PID_init(&PID_speed_contraller[i], speed_kp, speed_ki, speed_kd, 0.0f, 0.0f, 1000.0f, 1.0f, 0.0f, 0, 0); // Set max_output to 100.0f as an example
+  }
   pre_motor_speed = 0;
+  chassis_set_queue = xQueueCreate(4, sizeof(struct SetData));
   xTaskCreate(RM3508MotorSetSpeed, "RM3508_Motor_SetSpeed", 1024, NULL, 1, NULL);
+  xTaskCreate(ChassisTargetSpeedUpdate, "Chassis_TargetSpeed_Update", 1024, NULL, 1, NULL);
+  xTaskCreate(ComputeSpeed, "Conpute_Speed", 1024, NULL, 1, NULL);
+}
+
+void ChassisSpeedSet(float vx, float vy, float angle)
+{
+  struct SetData set_data;
+  set_data.vx = vx;
+  set_data.vy = vy;
+  set_data.angle = angle;
+  xQueueSend(chassis_set_queue, &set_data, 0);
+}
+
+void ChassisTargetSpeedUpdate(void *argument)
+{
+  struct SetData set_data;
+  while (1)
+  {
+    xQueueReceive(chassis_set_queue, &set_data, portMAX_DELAY);
+    chassis_target_speed = set_data;
+  }
 }
 
 void RM3508MotorSetSpeed(void *argument)
@@ -62,23 +93,34 @@ void RM3508MotorSetSpeed(void *argument)
   struct ControlDR16Data control_data;
   while (1)
   {
-    ControlDR16GetValue(&control_data);
-    sp = ((float)control_data.ch0 - 1024.0f);
-    float fb = 0;
-
-    // update setspeed if speed changed
-    pid_sp_set(&pidcontraller, (float)sp);
-
-    // comput co and tx to mot
-    struct MotorRm3508ReturnData motor_data;
-    MotorRm3508Get(0, &motor_data);
-    fb = motor_data.rpm;
-    float co = PID_compute(&pidcontraller, &fb);
-    MotorRm3508Set(0, (int16_t)co);
-    vTaskDelay(2); // Delay for a period to control the loop frequency
+    for (int i = 0; i < 4; i++)
+    {
+      struct MotorRm3508ReturnData motor_data;
+      MotorRm3508Get(i, &motor_data);
+      fb = motor_data.rpm;
+      float co = PID_compute(&pidcontraller, &fb);
+      MotorRm3508Set(i, (int16_t)co);
+    }
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 
+void ComputeSpeed(void *argument)
+{
+  while (1)
+  {
+    motor_target_speed[0] = -chassis_target_speed.vx + chassis_target_speed.vy;
+    motor_target_speed[1] = -chassis_target_speed.vx - chassis_target_speed.vy;
+    motor_target_speed[2] = chassis_target_speed.vx + chassis_target_speed.vy;
+    motor_target_speed[3] = chassis_target_speed.vx - chassis_target_speed.vy;
+
+    for (int i = 0; i < 4; i++)
+    {
+      PID_sp_set(&PID_speed_contraller[i], motor_target_speed[i]);
+    }
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+}
 // used to set control the angle of the motor
 // return the speed should be set to the motor
 /*

@@ -8,7 +8,15 @@
 #include "freertos.h"
 #include "cmsis_os.h"
 
-void RM3508MotorSetSpeed(void *argument);
+struct SpeedSet
+{
+  float Vx;
+  float Vy;
+  float angle;
+}
+
+void
+RM3508MotorSetSpeed(void *argument);
 void RM3508MotorSetAngle(void *argument);
 void receive_date(float date, char flag);
 void RM3508PIDMotorInit(UART_HandleTypeDef *UARTx, CAN_HandleTypeDef *hcan);
