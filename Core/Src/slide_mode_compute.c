@@ -1,8 +1,8 @@
 #include "slide_mode_compute.h"
 #include "math.h"
-float K_t = 0.03f;
+float k_t = 0.03f;
 float b = 0.01f;
-float k = 10;
+float k = 100;
 float d = 0.1f;
 float SlideModeCompute(float sp, float cur)
 {
