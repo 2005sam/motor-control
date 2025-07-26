@@ -26,7 +26,7 @@ struct RxData
 };
 
 CAN_HandleTypeDef hcan;
-CAN_RxHeaderTypeDef rx_header[4];
+//CAN_RxHeaderTypeDef rx_header[4];
 CAN_TxHeaderTypeDef tx_header;
 QueueHandle_t set_data_queue;
 QueueHandle_t get_data_queue;
@@ -51,7 +51,7 @@ char MotorRm3508Init(CAN_HandleTypeDef *hcan1)
 	hcan = *hcan1;
 	fifo_number = 0;
 
-	RxHeaderSet();
+	//RxHeaderSet();
 	TxHeaderSet();
 	sFilterConfigSet();
 	HAL_CAN_Start(&hcan);
@@ -75,6 +75,7 @@ char MotorRm3508Init(CAN_HandleTypeDef *hcan1)
 	return 0;
 }
 
+/*
 void RxHeaderSet(void)
 {
 	for (int i = 0; i < 4; i++)
@@ -86,7 +87,7 @@ void RxHeaderSet(void)
 		rx_header[i].IDE = CAN_ID_STD;
 	}
 }
-
+*/
 void TxHeaderSet(void)
 {
 	tx_header.StdId = 0x200;
@@ -107,7 +108,7 @@ void sFilterConfigSet(void)
 	s_filter_config.FilterScale = CAN_FILTERSCALE_32BIT;
 	s_filter_config.FilterIdHigh = 0x200 << 5;
 	s_filter_config.FilterIdLow = 0x0000;
-	s_filter_config.FilterMaskIdHigh = 0x7fe << 5;
+	s_filter_config.FilterMaskIdHigh = 0x000 << 5;
 	s_filter_config.FilterMaskIdLow = 0x0000;
 	HAL_CAN_ConfigFilter(&hcan, &s_filter_config);
 }
@@ -169,16 +170,16 @@ void ReceiveDataProcess(void *argument)
 	{
 		// xSemaphoreTake(can_receive_mutex, portMAX_DELAY);
 		uint8_t reve_data[8];
-		for (int i = 0; i < 4; i++)
-		{
-			if (HAL_CAN_GetRxMessage(&hcan, Rxfifo, &rx_header[i], reve_data) == HAL_OK)
+		CAN_RxHeaderTypeDef rx_header;
+			if (HAL_CAN_GetRxMessage(&hcan, Rxfifo, &rx_header, reve_data) == HAL_OK)
 			{
+				char i=rx_header.StdId-0x200;
 				received_data[i].angle = (reve_data[0] << 8 | reve_data[1]) / 8191.0f;
 				received_data[i].rpm = (reve_data[2] << 8 | reve_data[3]);
 				received_data[i].current = (reve_data[4] << 8 | reve_data[5]);
 				received_data[i].temperture = reve_data[6];
 			}
-		}
+		
 	}
 }
 // two functions are used to receive the data from the motor
@@ -188,22 +189,26 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
 
 	// xSemaphoreGiveFromISR(can_receive_mutex,NULL);
+			CAN_RxHeaderTypeDef rx_header;
+
 	uint8_t reve_data[8];
-	for (int i = 0; i < 4; i++)
-	{
-		if (HAL_CAN_GetRxMessage(hcan, Rxfifo, &rx_header[i], reve_data) == HAL_OK)
+
+		if (HAL_CAN_GetRxMessage(hcan, Rxfifo, &rx_header, reve_data) == HAL_OK)
 		{
+			char i=rx_header.StdId-0x201;
 			received_data[i].angle = (reve_data[0] << 8 | reve_data[1]) / 8191.0f;
 			received_data[i].rpm = (reve_data[2] << 8 | reve_data[3]);
 			received_data[i].current = (reve_data[4] << 8 | reve_data[5]);
 			received_data[i].temperture = reve_data[6];
-		}
+		
 	}
 	portYIELD_FROM_ISR(pdTRUE);
 }
 
+/*
 void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
 	xSemaphoreGive(can_receive_mutex);
 	portYIELD_FROM_ISR(pdTRUE);
 }
+*/

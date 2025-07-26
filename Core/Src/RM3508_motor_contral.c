@@ -56,7 +56,7 @@ void RM3508PIDMotorInit(UART_HandleTypeDef *UARTx, CAN_HandleTypeDef *hcan)
 {
   ControlDR16Init(UARTx);
   MotorRm3508Init(hcan);
-  PID_init(&pidcontraller, speed_kp, speed_ki, speed_kd, 0.0f, 0.0f, 1000.0f, 1.0f, 0.0f, 0, 0); // Set max_output to 100.0f as an example
+  //PID_init(&pidcontraller, speed_kp, speed_ki, speed_kd, 0.0f, 0.0f, 1000.0f, 1.0f, 0.0f, 0, 0); // Set max_output to 100.0f as an example
   // PID_init(&angle_pid_contraller, angle_kp, angle_ki, angle_kd, 0.0f, 0.0f, 10000.0f, 0.3, 0.01, 1, 1.0f); // Set max_output to 100.0f as an example
   for (int i = 0; i < 4; i++)
   {
@@ -64,9 +64,9 @@ void RM3508PIDMotorInit(UART_HandleTypeDef *UARTx, CAN_HandleTypeDef *hcan)
   }
   pre_motor_speed = 0;
   chassis_set_queue = xQueueCreate(4, sizeof(struct StructChassisSpeedSet));
-  xTaskCreate(RM3508MotorSetSpeed, "RM3508_Motor_SetSpeed", 1024, NULL, 1, NULL);
-  xTaskCreate(ChassisTargetSpeedUpdate, "Chassis_TargetSpeed_Update", 1024, NULL, 1, NULL);
-  xTaskCreate(ComputeSpeed, "Conpute_Speed", 1024, NULL, 1, NULL);
+  xTaskCreate(RM3508MotorSetSpeed, "RM3508_Motor_SetSpeed", 256, NULL, 1, NULL);
+  xTaskCreate(ChassisTargetSpeedUpdate, "Chassis_TargetSpeed_Update", 128, NULL, 1, NULL);
+  xTaskCreate(ComputeSpeed, "Conpute_Speed", 128, NULL, 1, NULL);
 }
 
 void ChassisSpeedSet(float vx, float vy, float angle)
@@ -88,6 +88,8 @@ void ChassisTargetSpeedUpdate(void *argument)
   }
 }
 
+int16_t tmeptemp[4];
+
 void RM3508MotorSetSpeed(void *argument)
 {
   struct ControlDR16Data control_data;
@@ -98,7 +100,8 @@ void RM3508MotorSetSpeed(void *argument)
       struct MotorRm3508ReturnData motor_data;
       MotorRm3508Get(i, &motor_data);
       float fb = motor_data.rpm;
-      float co = PID_compute(&pidcontraller, &fb);
+      float co = PID_compute(&PID_speed_contraller[i], &fb);
+			tmeptemp[i]=co;
       MotorRm3508Set(i, (int16_t)co);
     }
     vTaskDelay(pdMS_TO_TICKS(100));
@@ -109,10 +112,14 @@ void ComputeSpeed(void *argument)
 {
   while (1)
   {
-    motor_target_speed[0] = -chassis_target_speed.vx + chassis_target_speed.vy;
-    motor_target_speed[1] = -chassis_target_speed.vx - chassis_target_speed.vy;
-    motor_target_speed[2] = chassis_target_speed.vx + chassis_target_speed.vy;
-    motor_target_speed[3] = chassis_target_speed.vx - chassis_target_speed.vy;
+    struct ControlDR16Data contral_data;
+    ControlDR16GetValue(&contral_data);
+    chassis_target_speed.vy = (contral_data.ch0 - 1024)*10; // Adjusting the range from 0-2048 to -1024 to 1024
+    chassis_target_speed.vx = (contral_data.ch1 - 1024)*10;
+    motor_target_speed[0] = -chassis_target_speed.vx - chassis_target_speed.vy;
+    motor_target_speed[1] = chassis_target_speed.vx - chassis_target_speed.vy;
+    motor_target_speed[2] = -chassis_target_speed.vx + chassis_target_speed.vy;
+    motor_target_speed[3] = chassis_target_speed.vx + chassis_target_speed.vy;
 
     for (int i = 0; i < 4; i++)
     {
