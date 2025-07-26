@@ -125,14 +125,17 @@ void ComputeSpeed(void *argument)
 {
   while (1)
   {
+		int16_t round=0;
 
     ControlDR16GetValue(&contral_data);
+		round=(contral_data.s2-1)*2000;
+
     chassis_target_speed.vy = (contral_data.ch0 - 1024) * 10; // Adjusting the range from 0-2048 to -1024 to 1024
     chassis_target_speed.vx = (contral_data.ch1 - 1024) * 10;
-    motor_target_speed[0] = -chassis_target_speed.vx - chassis_target_speed.vy;
-    motor_target_speed[1] = chassis_target_speed.vx - chassis_target_speed.vy;
-    motor_target_speed[2] = -chassis_target_speed.vx + chassis_target_speed.vy;
-    motor_target_speed[3] = chassis_target_speed.vx + chassis_target_speed.vy;
+    motor_target_speed[0] = -chassis_target_speed.vx - chassis_target_speed.vy+round;
+    motor_target_speed[1] = chassis_target_speed.vx - chassis_target_speed.vy+round;
+    motor_target_speed[2] = -chassis_target_speed.vx + chassis_target_speed.vy+round;
+    motor_target_speed[3] = chassis_target_speed.vx + chassis_target_speed.vy+round;
 
     for (int i = 0; i < 4; i++)
     {
