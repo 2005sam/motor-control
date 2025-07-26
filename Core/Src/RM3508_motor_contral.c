@@ -1,10 +1,19 @@
+// Copyright (C) 2025 b2(shengpengxiang1@outlook.com)
+// This This program is free software:
+// you can redistribute it and/or modify it under the terms of the
+// GNU General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License along with this program.
+// If not, see <http://www.gnu.org/licenses/>.
 #include "RM3508_motor_contral.h"
 #include "queue.h"
 #include "contral_DR16.h"
 #include "slide_mode_compute.h"
 #include "motor_rm3508.h"
-
-
 
 // #define speed_kp 1
 // #define speed_ki 1
@@ -119,23 +128,21 @@ void RM3508MotorSetSpeed(void *argument)
   }
 }
 
-
-
 void ComputeSpeed(void *argument)
 {
   while (1)
   {
-		int16_t round=0;
+    int16_t round = 0;
 
     ControlDR16GetValue(&contral_data);
-		round=(contral_data.s2-1)*2000;
+    round = (contral_data.s2 - 1) * 2000;
 
     chassis_target_speed.vy = (contral_data.ch0 - 1024) * 10; // Adjusting the range from 0-2048 to -1024 to 1024
     chassis_target_speed.vx = (contral_data.ch1 - 1024) * 10;
-    motor_target_speed[0] = -chassis_target_speed.vx - chassis_target_speed.vy+round;
-    motor_target_speed[1] = chassis_target_speed.vx - chassis_target_speed.vy+round;
-    motor_target_speed[2] = -chassis_target_speed.vx + chassis_target_speed.vy+round;
-    motor_target_speed[3] = chassis_target_speed.vx + chassis_target_speed.vy+round;
+    motor_target_speed[0] = -chassis_target_speed.vx - chassis_target_speed.vy + round;
+    motor_target_speed[1] = chassis_target_speed.vx - chassis_target_speed.vy + round;
+    motor_target_speed[2] = -chassis_target_speed.vx + chassis_target_speed.vy + round;
+    motor_target_speed[3] = chassis_target_speed.vx + chassis_target_speed.vy + round;
 
     for (int i = 0; i < 4; i++)
     {
