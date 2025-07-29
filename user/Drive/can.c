@@ -5,7 +5,7 @@
 
 // Global variables for CAN communication
 
-CAN_HandleTypeDef *hcan;
+extern CAN_HandleTypeDef hcan1;
 CAN_TxHeaderTypeDef tx_header;
 uint32_t Rxfifo;
 char fifo_number;
@@ -20,30 +20,18 @@ void TxHeaderSet(void);
 void sFilterConfigSet(void);
 void ReceiveDataProcess(void *argument);
 
-/**
- * @brief  Initialize the CAN communication.
- *
- * @param  hcan_input  Pointer to CAN_HandleTypeDef structure
- * @param  fifo_num    Select which FIFO to use for reception. 0 for FIFO0, 1 for FIFO1.
- *
- * @retval 0           Success
- * @retval -1          CAN start failed
- * @retval -2          FIFO0 notification activation failed
- * @retval -3          FIFO1 notification activation failed
- */
-char CanInit(CAN_HandleTypeDef *hcan_input, char fifo_num)
+char CanInit(void)
 {
 
 	// Store the CAN handle pointer
-	fifo_number = fifo_num;
-	hcan = hcan_input;
+	fifo_number = 0;
 
 	// Configure TX header and filter
 	TxHeaderSet();
 	sFilterConfigSet();
 
 	// Start CAN peripheral
-	if (HAL_CAN_Start(hcan) != HAL_OK)
+	if (HAL_CAN_Start(hcan1) != HAL_OK)
 	{
 		return -1; // CAN start failed
 	}
@@ -52,7 +40,7 @@ char CanInit(CAN_HandleTypeDef *hcan_input, char fifo_num)
 	if (fifo_number == 0)
 	{
 		Rxfifo = CAN_RX_FIFO0;
-		if (HAL_CAN_ActivateNotification(hcan, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
+		if (HAL_CAN_ActivateNotification(hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
 		{
 			return -2; // FIFO0 notification activation failed
 		}
@@ -60,7 +48,7 @@ char CanInit(CAN_HandleTypeDef *hcan_input, char fifo_num)
 	else
 	{
 		Rxfifo = CAN_RX_FIFO1;
-		if (HAL_CAN_ActivateNotification(hcan, CAN_IT_RX_FIFO1_MSG_PENDING) != HAL_OK)
+		if (HAL_CAN_ActivateNotification(hcan1, CAN_IT_RX_FIFO1_MSG_PENDING) != HAL_OK)
 		{
 			return -3; // FIFO1 notification activation failed
 		}
@@ -108,7 +96,7 @@ void sFilterConfigSet(void)
 	s_filter_config.FilterIdLow = 0x0000;
 	s_filter_config.FilterMaskIdHigh = 0x000 << 5;
 	s_filter_config.FilterMaskIdLow = 0x0000;
-	HAL_CAN_ConfigFilter(hcan, &s_filter_config);
+	HAL_CAN_ConfigFilter(hcan1, &s_filter_config);
 }
 
 /**
@@ -121,7 +109,7 @@ void sFilterConfigSet(void)
 char CanSend(uint8_t *data[8])
 {
 	uint32_t mailbox;
-	if (HAL_CAN_AddTxMessage(hcan, &tx_header, data, &mailbox;) != HAL_OK)
+	if (HAL_CAN_AddTxMessage(hcan1, &tx_header, data, &mailbox;) != HAL_OK)
 	{
 		return -1; // CAN transmission failed
 	}

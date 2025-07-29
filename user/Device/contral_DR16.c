@@ -17,42 +17,9 @@
 #include "queue.h"
 #include "semphr.h"
 
-UART_HandleTypeDef *huart_local;
-SemaphoreHandle_t xBinarySemaphorel;
-uint8_t rx_Buffer[18];
-int16_t result;
 struct ControlDR16Data processed_data;
-xQueueHandle control_dr16_queue_isr;
-void ControlDR16Process(void *argument);
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-  xSemaphoreGiveFromISR(xBinarySemaphorel, NULL);
-}
-
-void ContralDR16InitTask(void *argument);
-
-// this function is used to initialize the DR16 control system
-// set the huart parameter to the UART handle of the DR16
-// input: huart - the handle of the DR16 UART
-void ControlDR16Init(UART_HandleTypeDef *param_huart)
-{
-  huart_local = param_huart;
-  xTaskCreate(ContralDR16InitTask, "ContralDR16InitTask", 512, NULL, 0, NULL);
-}
-
-// function to initialize the DR16 control system
-void ContralDR16InitTask(void *argument)
-{
-  xBinarySemaphorel = xSemaphoreCreateBinary();
-  HAL_UART_Receive_IT(huart_local, rx_Buffer, 18);
-  xTaskCreate(ControlDR16Process, "ControlDR16Process", 512, NULL, 1, NULL);
-  vTaskDelete(NULL);
-}
-
-// this function is used to get the value of the processed data
-// the data will return to processed_data struct
-void ControlDR16Process(void *argument)
+void ContralDR16GetOrigin(uint8_t rx_Buffer[18])
 {
   while (1)
   {
@@ -73,7 +40,6 @@ void ControlDR16Process(void *argument)
     processed_data.mouse_button_R = rx_Buffer[13];
     processed_data.buttons = ((int16_t)rx_Buffer[14]) | ((int16_t)rx_Buffer[15] << 8);
     // processed_data.reserved = control_dr16_data.data2 & 0xFFFF;
-    HAL_UART_Receive_IT(huart_local, rx_Buffer, 18);
   }
 }
 

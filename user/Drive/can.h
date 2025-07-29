@@ -8,7 +8,7 @@
 // External variables
 
 // Function declarations
-char CanInit(CAN_HandleTypeDef *hcan_input, char fifo_num);
+char CanInit(void);
 char CanSend(uint8_t *data[8]);
 
 #endif
