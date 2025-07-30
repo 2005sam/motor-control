@@ -22,27 +22,19 @@ void ReceiveDataProcess(void *argument);
 
 char CanInit(void)
 {
-
-	// Store the CAN handle pointer
 	fifo_number = 0;
-
-	// Configure TX header and filter
 	TxHeaderSet();
 	sFilterConfigSet();
-
-	// Start CAN peripheral
 	if (HAL_CAN_Start(hcan1) != HAL_OK)
 	{
-		return -1; // CAN start failed
+		return -1;
 	}
-
-	// Activate interrupt notifications based on FIFO selection
 	if (fifo_number == 0)
 	{
 		Rxfifo = CAN_RX_FIFO0;
 		if (HAL_CAN_ActivateNotification(hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
 		{
-			return -2; // FIFO0 notification activation failed
+			return -2;
 		}
 	}
 	else
@@ -50,13 +42,13 @@ char CanInit(void)
 		Rxfifo = CAN_RX_FIFO1;
 		if (HAL_CAN_ActivateNotification(hcan1, CAN_IT_RX_FIFO1_MSG_PENDING) != HAL_OK)
 		{
-			return -3; // FIFO1 notification activation failed
+			return -3;
 		}
 	}
 	get_data_queue = xQueueCreate(4, sizeof(struct RevciveData));
 	xTaskCreate(ReceiveDataProcess, "ReceiveDataProcess", 32, NULL, 1, NULL);
 
-	return 0; // Success
+	return 0;
 }
 
 /**

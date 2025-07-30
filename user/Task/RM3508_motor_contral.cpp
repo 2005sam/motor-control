@@ -151,28 +151,3 @@ void ComputeSpeed(void *argument)
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
-// used to set control the angle of the motor
-// return the speed should be set to the motor
-/*
-void RM3508MotorSetAngle(void *argument)
-{
-  // float Kp = angle_kp;
-  // float Ki = angle_ki;
-  // float Kd = angle_kd;
-  while (1)
-  {
-    float sp;
-    xQueuePeek(angle_queue, &sp, 0); // Peek the desired angle from the queue
-    int16_t co;
-    float fb = 0;
-
-    pid_sp_set(&angle_pid_contraller, sp); // Set the desired value (setpoint) for the PID controller
-    struct rx_date_motor_rm3508_struct motor_rx_data;
-    xQueuePeek(motor_rm3508_rx_queue, &motor_rx_data, 0);  // Peek the motor data from the queue
-    fb = motor_rx_data.angle;                              // Get the feedback value from the motor
-    co = (int16_t)PID_compute(&angle_pid_contraller, &fb); // Compute the control output using the PID controller
-    xQueueOverwrite(speed_queue, &co);                     // Overwrite the speed queue with the computed control output
-    vTaskDelay(pdMS_TO_TICKS(100));
-  }
-}
-  */
