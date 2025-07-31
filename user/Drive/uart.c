@@ -1,20 +1,23 @@
 #include "uart.h"
 #include "contral_DR16.h"
+#include "freertos.h"
+#include "cmsis_os.h"
+#include "semphr.h"
 uint8_t rx_Buffer[18];
 extern UART_HandleTypeDef huart3;
 SemaphoreHandle_t xBinarySemaphorelUart3;
 void ControlDR16Init(void);
-
+void Uart3CallbackProcess(void *argument);
 void ControlDR16Init(void)
 {
   xBinarySemaphorelUart3 = xSemaphoreCreateBinary();
   HAL_UART_Receive_IT(&huart3, rx_Buffer, 18);
-  1 xTaskCreate(Uart3CallbackProcess, "Uart3CallbackProcess", 64, NULL, 1, NULL);
+  xTaskCreate(Uart3CallbackProcess, "Uart3CallbackProcess", 64, NULL, 1, NULL);
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-  if (*huart == huart3)
+  if (huart->Instance == huart3.Instance)
     xSemaphoreGiveFromISR(xBinarySemaphorelUart3, NULL);
 }
 

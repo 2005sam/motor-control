@@ -9,6 +9,6 @@
 
 // Function declarations
 char CanInit(void);
-char CanSend(uint8_t *data[8]);
+char CanSend(uint8_t data[8]);
 
 #endif

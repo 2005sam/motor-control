@@ -14,7 +14,7 @@ struct StructChassisSpeedSet
   float vy;
   float angle;
 };
-
+/*
 class MotorRM3508
 {
 public:
@@ -26,11 +26,10 @@ PIDController PID_speed_contraller;
 void MotorRm3508Compute(int16_t set_speed);
 
 
-}
+};
+*/
 
-void
-RM3508MotorSetSpeed(void *argument);
-void RM3508MotorSetAngle(void *argument);
+void RM3508MotorSetSpeed(void *argument);
 void receive_date(float date, char flag);
 void RM3508PIDMotorInit(UART_HandleTypeDef *UARTx, CAN_HandleTypeDef *hcan);
 

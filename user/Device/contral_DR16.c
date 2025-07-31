@@ -23,7 +23,6 @@ void ContralDR16GetOrigin(uint8_t rx_Buffer[18])
 {
   while (1)
   {
-    xSemaphoreGiveFromISR(xBinarySemaphorel, NULL);
 
     // Process the received data
 

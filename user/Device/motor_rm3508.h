@@ -14,5 +14,5 @@ struct MotorRm3508ReturnData
 };
 char MotorRm3508Set(char motor_number, int16_t motor_current);
 char MotorRm3508Get(char motor_number, struct MotorRm3508ReturnData *kpdata);
-char MotorRm3508GetOriginalData(uint8_t *data[8], char motor_number);
+char MotorRm3508GetOriginalData(uint8_t data[8], char motor_number);
 #endif

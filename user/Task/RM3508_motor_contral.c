@@ -14,6 +14,8 @@
 #include "contral_DR16.h"
 #include "slide_mode_compute.h"
 #include "motor_rm3508.h"
+#include "can.h"
+#include "uart.h"
 
 // #define speed_kp 1
 // #define speed_ki 1
@@ -67,8 +69,8 @@ void receive_date(float date, char flag)
 // init motor control
 void RM3508PIDMotorInit(UART_HandleTypeDef *UARTx, CAN_HandleTypeDef *hcan)
 {
-  ControlDR16Init(UARTx);
-  MotorRm3508Init(hcan);
+ControlDR16Init();
+CanInit();
   // PID_init(&pidcontraller, speed_kp, speed_ki, speed_kd, 0.0f, 0.0f, 1000.0f, 1.0f, 0.0f, 0, 0); // Set max_output to 100.0f as an example
   //  PID_init(&angle_pid_contraller, angle_kp, angle_ki, angle_kd, 0.0f, 0.0f, 10000.0f, 0.3, 0.01, 1, 1.0f); // Set max_output to 100.0f as an example
   for (int i = 0; i < 4; i++)

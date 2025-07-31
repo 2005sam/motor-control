@@ -2,6 +2,7 @@
 #include "freertos.h"
 #include "cmsis_os.h"
 #include "motor_rm3508.h"
+#include "queue.h"
 
 // Global variables for CAN communication
 
@@ -12,7 +13,7 @@ char fifo_number;
 QueueHandle_t get_data_queue;
 struct RevciveData
 {
-	CAN_RxHeaderTypeDef rx_header;
+	CAN_RxHeaderTypeDef rxheader;
 	uint8_t data[8];
 };
 
@@ -25,14 +26,14 @@ char CanInit(void)
 	fifo_number = 0;
 	TxHeaderSet();
 	sFilterConfigSet();
-	if (HAL_CAN_Start(hcan1) != HAL_OK)
+	if (HAL_CAN_Start(&hcan1) != HAL_OK)
 	{
 		return -1;
 	}
 	if (fifo_number == 0)
 	{
 		Rxfifo = CAN_RX_FIFO0;
-		if (HAL_CAN_ActivateNotification(hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
+		if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
 		{
 			return -2;
 		}
@@ -40,7 +41,7 @@ char CanInit(void)
 	else
 	{
 		Rxfifo = CAN_RX_FIFO1;
-		if (HAL_CAN_ActivateNotification(hcan1, CAN_IT_RX_FIFO1_MSG_PENDING) != HAL_OK)
+		if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO1_MSG_PENDING) != HAL_OK)
 		{
 			return -3;
 		}
@@ -88,7 +89,7 @@ void sFilterConfigSet(void)
 	s_filter_config.FilterIdLow = 0x0000;
 	s_filter_config.FilterMaskIdHigh = 0x000 << 5;
 	s_filter_config.FilterMaskIdLow = 0x0000;
-	HAL_CAN_ConfigFilter(hcan1, &s_filter_config);
+	HAL_CAN_ConfigFilter(&hcan1, &s_filter_config);
 }
 
 /**
@@ -98,10 +99,10 @@ void sFilterConfigSet(void)
  *         -1 if the transmission fails.
  */
 
-char CanSend(uint8_t *data[8])
+char CanSend(uint8_t data[8])
 {
 	uint32_t mailbox;
-	if (HAL_CAN_AddTxMessage(hcan1, &tx_header, data, &mailbox;) != HAL_OK)
+	if (HAL_CAN_AddTxMessage(&hcan1, &tx_header, data, &mailbox) != HAL_OK)
 	{
 		return -1; // CAN transmission failed
 	}
