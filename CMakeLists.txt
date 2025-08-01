@@ -47,30 +47,26 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user sources here
-    user/Drive/can.c
-    user/Drive/uart.c
-    user/Device/contral_DR16.c
-    user/Device/motor_rm3508.c
-    user/Task/RM3508_motor_contral.c
-    user/Algorithm/pid.c
-    user/Algorithm/slide_mode_compute.c
+    # User sources from usr directory
+    usr/Algorithm/pid.c
+    usr/Algorithm/slide_mode_compute.c
+    usr/Device/contral_DR16.c
+    usr/Device/motor_rm3508.c
+    usr/Task/RM3508_motor_contral.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined include paths
-            User/Drive
-        User/Algorithm
-        User/Device
-        User/Task
-
+    # User include paths
+    usr/Algorithm
+    usr/Device
+    usr/Task
+    usr/cfg
 )
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
-
 )
 
 # Add linked libraries
